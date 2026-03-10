@@ -43,6 +43,8 @@ Interrupts:
         pop FLAGS
 I/O:
     The CPU has a simple memory-mapped I/O system, with specific addresses reserved for input and output operations.  
+    0xFE00: UART I/O Register (write to output a byte, read to input a byte. virtual UART is connected to console)
+    0xFE01: UART Status Register (bit 0: input ready, bit 1: output ready)
 CPUID Instruction:
     The CPUID instruction (opcode 0xFD) can be used to query information about the CPU, such as vendor ID, supported features, and extension level.
     These values are returned in specific registers.
@@ -118,6 +120,9 @@ Instructions and Opcodes:
         0x25: LEA dst_reg, src1_reg, imm_val - Load effective address. Calculate address by adding src1_reg and imm_val, store result in dst_reg (useful for accessing local variables on stack or array indexing)
 
 """
+
+import sys
+import select
 
 class CPUError(Exception):
     # Generic custom exception for CPU errors (e.g., invalid opcode, memory access violation)
@@ -218,11 +223,24 @@ class CPU:
 
     def io8_read(self, addr):
         # Read 8-bit value from MMIO address
-        return 0 # placeholder
+        match addr:
+            case 0xFE00: # UART I/O register
+                ch = sys.stdin.read(1)
+                return ord(ch)
+            case 0xFE01: # UART status register
+                # Bit 0: input ready, Bit 1: output ready
+                input_ready = 1 if select.select([sys.stdin], [], [], 0)[0] else 0
+                output_ready = 1 # always ready to output
+                return (output_ready << 1) | input_ready
+            case _: # Invalid MMIO address
+                return 0 # return 0 for reads from other MMIO addresses for now (could raise error or log warning if desired)
 
     def io8_write(self, addr, val):
-        # Write 8-bit value to MMIO address
-        pass # placeholder
+        match addr:
+            case 0xFE00: # UART I/O register
+                print(chr(val & 0xFF), end='') # Output byte as character to console
+            case _: # Invalid MMIO address
+                None # ignore writes to other MMIO addresses for now (could raise error or log warning if desired)
 
     def read8(self, addr):
         # wrapper for switching I/O and normal memory access
@@ -498,16 +516,16 @@ class CPU:
             case 0x0E: # INT imm_val
                 self.push(self.flag) # push FLAGS onto stack
                 self.push(self.pc) # push PC onto stack
-                self.flag &= ~self.FLAG_I # clear I flag to disable further interrupts
+                self.set_flag(self.FLAG_I, False) # clear I flag to disable further interrupts
                 vector_address = 0xFF00 + (imm_val & 0x7F) * 2 # calculate interrupt vector address
                 self.pc = self.read16(vector_address) # load interrupt handler address from vector table and jump
             case 0x0F: # IRET
                 self.pc = self.pop() # pop PC from stack and jump
                 self.flag = self.pop() # pop FLAGS from stack
-            case 0x10: # EI - Enable interrupts
-                self.flag |= self.FLAG_I # set I flag to enable interrupts
-            case 0x11: # DI - Disable interrupts
-                self.flag &= ~self.FLAG_I # clear I flag to disable interrupts
+            case 0x10: # EI
+                self.set_flag(self.FLAG_I, True) # set I flag to enable interrupts
+            case 0x11: # DI
+                self.set_flag(self.FLAG_I, False) # clear I flag to disable interrupts
             case 0xFD: # CPUID
                 self.reg[1] = 0x0000 # Vendor ID (currently 0x0000 only)
                 self.reg[2] = self.CPU_EXTENSION_LEVEL # Extension Level (0 for EL0, 1 for EL1, etc.)

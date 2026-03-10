@@ -11,7 +11,7 @@ if __name__ == "__main__":
     cpu = CPU() # Create a CPU instance
     load_program(cpu, sys.argv[1]) # Load the assembled binary program into memory
     cpu.run() # Run the CPU until it halts
-    print("CPU halted. Final register state:")
+    print("\nCPU halted. Final register state:")
     for i in range(16):
         if i == 14:
             print(f"R{i} (SP): {cpu.reg[i]:04X}")
