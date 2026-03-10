@@ -20,7 +20,7 @@ OPCODES = {
     "NOT":0x19,"INC":0x1A,"DEC":0x1B,"NEG":0x1C,
     "WAIT":0x1D,"PUSHI":0x1E,
     "JR":0x1F,"JZR":0x20,"JNZR":0x21,"JC":0x22,"JNC":0x23,"JRI":0x24,
-    "LEA":0x25,
+    "LEA":0x25,"STI":0x26,
     "CPUID":0xFD,"RESET":0xFE,"HALT":0xFF
 }
 
@@ -210,6 +210,11 @@ class Assembler:
                 s=self.reg(tokens[2])
                 imm=self.imm(tokens[3])
                 self.emit32(self.encode_I(opcode,d,s,imm))
+
+            elif op=="STI":
+                d=self.reg(tokens[1])
+                imm=self.imm(tokens[2])
+                self.emit32(self.encode_I(opcode,d,0,imm))
 
             else:
                 raise Exception("unknown instruction "+raw)

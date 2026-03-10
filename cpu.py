@@ -118,7 +118,7 @@ Instructions and Opcodes:
 
         Additional Load/Store Instructions:
         0x25: LEA dst_reg, src1_reg, imm_val - Load effective address. Calculate address by adding src1_reg and imm_val, store result in dst_reg (useful for accessing local variables on stack or array indexing)
-
+        0x26: STI dst_reg. imm_val - Store immediate value to memory address formed by dst_reg. Calculate address from dst_reg, store imm_val at that address (useful for quickly storing constants to memory without needing an extra register to hold the value)
 """
 
 import sys
@@ -577,7 +577,7 @@ class CPU:
                     self.reg[dst_reg] = result
             case 0x1D: # WAIT
                 self.running = False # put CPU in not running state until an interrupt occurs
-                # TODO: Implement Intterupt handling to set self.running = True when an interrupt occurs
+                # TODO: Implement Interrupt handling to set self.running = True when an interrupt occurs
             case 0x1E: # PUSHI imm_val
                 self.push(imm_val) # push immediate value onto stack
             case 0x1F: # JR src_reg
@@ -606,6 +606,10 @@ class CPU:
                 addr = (self.reg[src1_reg] + imm_val) & 0xFFFF # calculate effective address by adding src1_reg and imm_val
                 if dst_reg != 0: # ignore zero register
                     self.reg[dst_reg] = addr
+            case 0x26: # STI dst_reg, imm_val
+                addr = self.reg[dst_reg] & 0xFFFF # calculate address from dst_reg
+                val = imm_val & 0xFFFF
+                self.write16(addr, val)
             case _: # invalid opcode
                 raise CPUError(f"Invalid opcode: {opcode:02X}",self.pc, instr)
 
