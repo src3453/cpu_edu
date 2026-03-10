@@ -1,0 +1,10 @@
+; test for assembler
+LDI R1, 42
+LDI R2, 10
+
+loop:
+ADD R1, R1, R2
+CMP R1, R2
+JNZ loop
+
+HALT
