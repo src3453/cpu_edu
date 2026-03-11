@@ -43,6 +43,7 @@ Interrupts:
         pop FLAGS
 I/O:
     The CPU has a simple memory-mapped I/O system, with specific addresses reserved for input and output operations.  
+    Note: LD, ST instructions in I/O address range (0xFE00-0xFEFF) will be treated as 8-bit I/O operations instead of 16-bit memory operations.
     0xFE00: UART I/O Register (write to output a byte, read to input a byte. virtual UART is connected to console)
     0xFE01: UART Status Register (bit 0: input ready, bit 1: output ready)
 CPUID Instruction:
@@ -118,7 +119,9 @@ Instructions and Opcodes:
 
         Additional Load/Store Instructions:
         0x25: LEA dst_reg, src1_reg, imm_val - Load effective address. Calculate address by adding src1_reg and imm_val, store result in dst_reg (useful for accessing local variables on stack or array indexing)
-        0x26: STI dst_reg. imm_val - Store immediate value to memory address formed by dst_reg. Calculate address from dst_reg, store imm_val at that address (useful for quickly storing constants to memory without needing an extra register to hold the value)
+        0x26: STI dst_reg, imm_val - Store immediate value to memory address formed by dst_reg. Calculate address from dst_reg, store imm_val at that address (useful for quickly storing constants to memory without needing an extra register to hold the value)
+        0x27: LDB dst_reg, [src1_reg] - Load byte from memory address formed by src1_reg into dst_reg (similar to LD but for 8-bit data instead of 16-bit)
+        0x28: STB [dst_reg], src1_reg - Store byte from src1_reg into memory address formed by dst_reg (similar to ST but for 8-bit data instead of 16-bit)
 """
 
 import sys
@@ -279,6 +282,20 @@ class CPU:
         val &= 0xFFFFFFFF
         self.write16(addr, (val >> 16))
         self.write16(addr + 2, val)
+
+    def read(self, addr):
+        # wrapper for ST, LD instructions to handle both 8-bit and 16-bit access based on address range
+        if 0xFE00 <= addr <= 0xFEFF:
+            return self.read8(addr) # I/O range uses 8-bit access
+        else:
+            return self.read16(addr) # Normal memory uses 16-bit access
+    
+    def write(self, addr, val):
+        # wrapper for ST, LD instructions to handle both 8-bit and 16-bit access based on address range
+        if 0xFE00 <= addr <= 0xFEFF:
+            self.write8(addr, val) # I/O range uses 8-bit access
+        else:
+            self.write16(addr, val) # Normal memory uses 16-bit access
 
     def sign16(self, val):
         val &= 0xFFFF
@@ -473,11 +490,11 @@ class CPU:
             case 0x02: # LD dst_reg, [src1_reg]
                 if dst_reg != 0: # ignore zero register
                     addr = self.reg[src1_reg] & 0xFFFF
-                    self.reg[dst_reg] = self.read16(addr)
+                    self.reg[dst_reg] = self.read(addr) & 0xFFFF
             case 0x03: # ST [dst_reg], src1_reg
                 addr = self.reg[dst_reg] & 0xFFFF
                 val = self.reg[src1_reg] & 0xFFFF
-                self.write16(addr, val)
+                self.write(addr, val)
             case 0x04: # LDI dst_reg, imm_val
                 if dst_reg != 0: # ignore zero register
                     self.reg[dst_reg] = imm_val & 0xFFFF
