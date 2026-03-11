@@ -8,7 +8,7 @@ Register Usage:
     Register FLAG is the flag register (-----------IVCNZ), read-only.
     I: interrupt enable flag, V: overflow flag, C: carry (borrow) flag, N: negative flag, Z: zero flag.
     R1~R13 are general-purpose registers for arithmetic and data manipulation.
-Instruction Set:
+Instruction Format:
     The CPU is Register-based, with each instruction being 32 bits long (RISC-like), with the following format:
     R: [opcode (8 bits)][dest_reg (4 bits)][src1_reg (4 bits)][src2_reg (4 bits)][unused (12 bits)]
     I: [opcode (8 bits)][dest_reg (4 bits)][src1_reg (4 bits)][imm_val (16 bits)]
@@ -26,6 +26,8 @@ Memory Map:
     0xFD00 - 0xFDFF: Stack area (256 bytes, 128 entries of 16-bit data)
     0xFE00 - 0xFEFF: Memory mapped I/O
     0xFF00 - 0xFFFF: interrupt vector (256 bytes, 128 entries of 16-bit address)
+Memory Banking in EL2:
+    0xFD00 - 0xFFFF will be fixed in bank 0, while 0x0000 - 0xFCFF can be switched between different memory banks to allow for more than 64KB of addressable memory.
 Interrupts:
     The CPU uses an interrupt vector table starting at address 0xFF00.
     Each entry in the vector table is a 16-bit address pointing to an interrupt handler.
@@ -43,6 +45,13 @@ Interrupts:
     IRET instruction behavior:
         pop PC
         pop FLAGS
+
+    Hardware interrupts in EL2:
+        EL2 introduces a WAIT instruction that puts the CPU in a not running state until an interrupt occurs.
+        The CPU has 16 hardware interrupt lines (0-15), and when an interrupt is triggered, the corresponding bit in the interrupt status register is set.
+        With IRQ_STATUS and IRQ_MASK registers, the CPU can check for pending interrupts and their priority.
+        IRQ 0 is the highest priority and IRQ 15 is the lowest. When multiple interrupts are pending, the CPU will service the highest priority one first.
+        IRQ interrupt vector will be calculated as INT 0x70 + IRQ number, allowing for up to 16 hardware interrupts with their own handlers. (e.g., IRQ 4 will trigger INT 0x74)
 I/O:
     The CPU has a simple memory-mapped I/O system, with specific addresses reserved for input and output operations.  
     Note: LD, ST instructions in I/O address range (0xFE00-0xFEFF) will be treated as 8-bit I/O operations instead of 16-bit memory operations.
@@ -108,33 +117,48 @@ Instructions and Opcodes:
         0x1B: DEC dst_reg - Decrement dst_reg by 1, store result in dst_reg (src1_reg, src2_reg are ignored)
         0x1C: NEG dst_reg, src1_reg - Negate src1_reg (two's complement), store result in dst_reg (src2_reg is ignored)
 
-        Advanced Interrupt Control:
-        0x1D: WAIT - Wait for interrupt (puts CPU in not running state until an interrupt occurs)
-
         Additional Stack Operations:
-        0x1E: PUSHI imm_val - Push immediate value onto stack (SP increments 2)
+        0x1D: PUSHI imm_val - Push immediate value onto stack (SP increments 2)
 
         Additional Branching:
-        0x1F: JR src_reg - Jump relative. Jump to address PC + (src_reg value) (useful for loops and function returns without needing an immediate value)
-        0x20: JZR src_reg - Jump relative if zero flag is set. Jump to address PC + (src_reg value) if zero flag is set
-        0x21: JNZR src_reg - Jump relative if zero flag is not set. Jump to address PC + (src_reg value) if zero flag is not set
-        0x22: JC src_reg - Jump if carry flag is set. Jump to address PC + (src_reg value) if carry flag is set
-        0x23: JNC src_reg - Jump if carry flag is not set. Jump to address PC + (src_reg value) if carry flag is not set
-        0x24: JRI imm_val - Jump relative immediate. Jump to address PC + imm_val
+        0x1E: JR src_reg - Jump relative. Jump to address PC + (src_reg value) (useful for loops and function returns without needing an immediate value)
+        0x1F: JZR src_reg - Jump relative if zero flag is set. Jump to address PC + (src_reg value) if zero flag is set
+        0x20: JNZR src_reg - Jump relative if zero flag is not set. Jump to address PC + (src_reg value) if zero flag is not set
+        0x21: JC src_reg - Jump if carry flag is set. Jump to address PC + (src_reg value) if carry flag is set
+        0x22: JNC src_reg - Jump if carry flag is not set. Jump to address PC + (src_reg value) if carry flag is not set
+        0x23: JRI imm_val - Jump relative immediate. Jump to address PC + imm_val
 
         Additional Load/Store Instructions:
-        0x25: LEA dst_reg, src1_reg, imm_val - Load effective address. Calculate address by adding src1_reg and imm_val, store result in dst_reg (useful for accessing local variables on stack or array indexing)
-        0x26: STI dst_reg, imm_val - Store immediate value to memory address formed by dst_reg. Calculate address from dst_reg, store imm_val at that address (useful for quickly storing constants to memory without needing an extra register to hold the value)
-        0x27: LDB dst_reg, [src1_reg] - Load byte from memory address formed by src1_reg into dst_reg (similar to LD but for 8-bit data instead of 16-bit)
-        0x28: STB [dst_reg], src1_reg - Store byte from src1_reg into memory address formed by dst_reg (similar to ST but for 8-bit data instead of 16-bit)
+        0x24: LEA dst_reg, src1_reg, imm_val - Load effective address. Calculate address by adding src1_reg and imm_val, store result in dst_reg (useful for accessing local variables on stack or array indexing)
+        0x25: STI dst_reg, imm_val - Store immediate value to memory address formed by dst_reg. Calculate address from dst_reg, store imm_val at that address (useful for quickly storing constants to memory without needing an extra register to hold the value)
+        0x26: LDB dst_reg, [src1_reg] - Load byte from memory address formed by src1_reg into dst_reg (similar to LD but for 8-bit data instead of 16-bit)
+        0x27: STB [dst_reg], src1_reg - Store byte from src1_reg into memory address formed by dst_reg (similar to ST but for 8-bit data instead of 16-bit)
     
     EL2 (Hardware Interupt and Extended Memory Address, for supporting more than 64KB of memory in the future. Not implemented yet, but reserved for future expansion):
         BANK, SWITCH, and other instructions for managing multiple memory banks to effectively increase addressable memory space beyond 16 bits.
-        Timer and other hardware interrupt control instructions for more advanced interrupt handling capabilities.
-    
+        WAIT, Timer and other hardware interrupt control instructions for more advanced interrupt handling capabilities.
+        Extended Registers:
+        Additional registers for managing memory banks, interrupt status, and other advanced features.
+            IRQ_STATUS: Register to check pending hardware interrupts (bit 0-15 correspond to IRQ 0-15)
+            IRQ_MASK: Register to enable/disable specific hardware interrupts (bit 0-15 correspond to IRQ 0-15)
+            BANK_SEL: Register to select active memory bank for extended addressing 
+            BANK_ATTR: Register to set attributes for memory banks (e.g., read/write permissions, cache settings, etc.). It will also be used to determine system memory size during CPUID instruction (e.g., 0 for 64KB, 1 for 128KB, etc.)
+
+        Advanced Interrupt Control:
+        0x28: WAIT - Wait for interrupt (puts CPU in not running state until an interrupt occurs)
+        0x29: MASKIRQ imm_val - Mask (disable) specific IRQ line(s) based on imm_val bitmask
+        0x2A: UNMASKIRQ imm_val - Unmask (enable) specific IRQ line(s) based on imm_val bitmask
+        0x2B: ACKIRQ imm_val - Acknowledge specific IRQ line(s) based on imm_val bitmask (used to clear pending interrupt status after handling)
+        0x2C: READIRQ dst_reg - Read IRQ status into dst_reg (bit 0-15 correspond to IRQ 0-15 pending status)
+
+        Memory Bank Control:
+        0x2D: BANK dst_reg, imm_val - Select memory bank based on imm_val and store current bank in dst_reg
+        0x2E: SWITCH dst_reg, imm_val - Switch to memory bank specified by imm_val and store previous bank in dst_reg
+
     EL3 (Paging MMU and Virtual Memory, Privileged Instructions, for implementing virtual memory and more advanced OS features. Not implemented yet, but reserved for future expansion):
         In EL3, Supervisor mode instructions are introduced for managing virtual memory, page tables, and other MMU features.
         Page fault, Privilege violation, and other exceptions are introduced for handling various error conditions that can occur in a more complex operating system environment.
+
 """
 
 import sys
@@ -619,41 +643,46 @@ class CPU:
                 result = self.alu_neg(self.reg[src1_reg])
                 if dst_reg != 0: # ignore zero register (but still perform flags update)
                     self.reg[dst_reg] = result
-            case 0x1D: # WAIT
-                self.running = False # put CPU in not running state until an interrupt occurs
-                # TODO: Implement Interrupt handling to set self.running = True when an interrupt occurs
-            case 0x1E: # PUSHI imm_val
+            case 0x1D: # PUSHI imm_val
                 self.push(imm_val) # push immediate value onto stack
-            case 0x1F: # JR src_reg
+            case 0x1E: # JR src_reg
                 offset = self.sign16(self.reg[src1_reg])
                 self.pc = (self.pc + offset) & 0xFFFF
-            case 0x20: # JZR src_reg
+            case 0x1F: # JZR src_reg
                 if self.get_flag(self.FLAG_Z): # if zero flag is set
                     offset = self.sign16(self.reg[src1_reg])
                     self.pc = (self.pc + offset) & 0xFFFF
-            case 0x21: # JNZR src_reg
+            case 0x20: # JNZR src_reg
                 if not self.get_flag(self.FLAG_Z): # if zero flag is not set
                     offset = self.sign16(self.reg[src1_reg])
                     self.pc = (self.pc + offset) & 0xFFFF
-            case 0x22: # JC src_reg
+            case 0x21: # JC src_reg
                 if self.get_flag(self.FLAG_C): # if carry flag is set
                     offset = self.sign16(self.reg[src1_reg])
                     self.pc = (self.pc + offset) & 0xFFFF
-            case 0x23: # JNC src_reg
+            case 0x22: # JNC src_reg
                 if not self.get_flag(self.FLAG_C): # if carry flag is not set
                     offset = self.sign16(self.reg[src1_reg])
                     self.pc = (self.pc + offset) & 0xFFFF
-            case 0x24: # JRI imm_val
+            case 0x23: # JRI imm_val
                 offset = self.sign16(imm_val)
                 self.pc = (self.pc + offset) & 0xFFFF
-            case 0x25: # LEA dst_reg, src1_reg, imm_val
+            case 0x24: # LEA dst_reg, src1_reg, imm_val
                 addr = (self.reg[src1_reg] + imm_val) & 0xFFFF # calculate effective address by adding src1_reg and imm_val
                 if dst_reg != 0: # ignore zero register
                     self.reg[dst_reg] = addr
-            case 0x26: # STI dst_reg, imm_val
+            case 0x25: # STI dst_reg, imm_val
                 addr = self.reg[dst_reg] & 0xFFFF # calculate address from dst_reg
                 val = imm_val & 0xFFFF
                 self.write16(addr, val)
+            case 0x26: # LDB dst_reg, [src1_reg]
+                if dst_reg != 0: # ignore zero register
+                    addr = self.reg[src1_reg] & 0xFFFF
+                    self.reg[dst_reg] = self.read8(addr) & 0xFF # load byte and zero-extend to 16 bits
+            case 0x27: # STB [dst_reg], src1_reg
+                addr = self.reg[dst_reg] & 0xFFFF
+                val = self.reg[src1_reg] & 0xFF # get least significant byte of src1_reg
+                self.write8(addr, val)
             case _: # invalid opcode
                 raise CPUError(f"Invalid opcode: {opcode:02X}",self.pc, instr, self)
 

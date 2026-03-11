@@ -16,13 +16,12 @@ OPCODES = {
     "SHL":0x15,"SHR":0x16,
     "CMP":0x17,"TEST":0x18,
     "NOT":0x19,"INC":0x1A,"DEC":0x1B,"NEG":0x1C,
-    "WAIT":0x1D,"PUSHI":0x1E,
-    "JR":0x1F,"JZR":0x20,"JNZR":0x21,"JC":0x22,"JNC":0x23,"JRI":0x24,
-    "LEA":0x25,"STI":0x26,
-    "LDB":0x27,"STB":0x28,
+    "PUSHI":0x1D,
+    "JR":0x1E,"JZR":0x1F,"JNZR":0x20,"JC":0x21,"JNC":0x22,"JRI":0x23,
+    "LEA":0x24,"STI":0x25,
+    "LDB":0x26,"STB":0x27,
     "CPUID":0xFD,"RESET":0xFE,"HALT":0xFF
 }
-
 
 def parse_number(x):
     x = x.strip()
@@ -195,7 +194,7 @@ class Assembler:
 
             opcode=OPCODES[op]
 
-            if op in ["NOP","RET","IRET","EI","DI","WAIT","CPUID","RESET","HALT"]:
+            if op in ["NOP","RET","IRET","EI","DI","CPUID","RESET","HALT"]:
                 self.emit32(self.encode_R(opcode,0,0,0))
 
             elif op=="MOV":
