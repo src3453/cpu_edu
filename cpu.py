@@ -122,6 +122,9 @@ Instructions and Opcodes:
         0x26: STI dst_reg, imm_val - Store immediate value to memory address formed by dst_reg. Calculate address from dst_reg, store imm_val at that address (useful for quickly storing constants to memory without needing an extra register to hold the value)
         0x27: LDB dst_reg, [src1_reg] - Load byte from memory address formed by src1_reg into dst_reg (similar to LD but for 8-bit data instead of 16-bit)
         0x28: STB [dst_reg], src1_reg - Store byte from src1_reg into memory address formed by dst_reg (similar to ST but for 8-bit data instead of 16-bit)
+    
+    EL2 (Extended Memory Address, for supporting more than 64KB of memory in the future. Not implemented yet, but reserved for future expansion):
+        BANK, SWITCH, and other instructions for managing multiple memory banks to effectively increase addressable memory space beyond 16 bits.
 """
 
 import sys
@@ -129,17 +132,31 @@ import select
 
 class CPUError(Exception):
     # Generic custom exception for CPU errors (e.g., invalid opcode, memory access violation)
-    def __init__(self, message, pc, instr=None):
+    def __init__(self, message, pc, instr=None, cpu=None):
         super().__init__(message)
         self.pc = pc
         self.instr = instr
+        self.cpu = cpu
 
     def __str__(self):
         pc_before = (self.pc - 4) & 0xFFFF
+        txt = ""
         if self.instr is not None:
-            return f"CPU Error at PC={pc_before:04X} (Instr={self.instr:08X}): {super().__str__()}"
+            txt += f"CPU Error at PC={pc_before:04X} (Instr={self.instr:08X}): {super().__str__()}"
         else:
-            return f"CPU Error at PC={pc_before:04X}: {super().__str__()}"
+            txt += f"CPU Error at PC={pc_before:04X}: {super().__str__()}"
+        txt += "\nFinal register state:\n"
+        for i in range(16):
+            if i == 14:
+                txt += f"R{i} (SP): {self.cpu.reg[i]:04X}\n"
+            elif i == 15:
+                txt += f"R{i} (PC): {self.cpu.reg[i]:04X}\n"
+            elif i == 0:
+                txt += f"R{i} (Zero): {self.cpu.reg[i]:04X}\n"
+            else:
+                txt += f"R{i:2}: {self.cpu.reg[i]:04X}\n"
+        txt += f"FLAG: {self.cpu.flag:016b}"
+        return txt
 
 class InvalidOpcodeError(CPUError):
     # Exception for invalid opcode errors
@@ -305,14 +322,14 @@ class CPU:
     def push(self, val):
         # Push 16-bit value onto stack
         if self.sp < self.STACK_START + 2: # Check for stack overflow (need at least 2 bytes free to push)
-            raise StackOverflowError(self.pc)
+            raise StackOverflowError(self.pc, cpu=self)
         self.sp = (self.sp - 2) & 0xFFFF # Decrement SP by 2 (stack grows downwards)
         self.write16(self.sp, val) # Write value to stack at SP
 
     def pop(self):
         # Pop 16-bit value from stack
         if self.sp >= self.STACK_END: # Check for stack underflow (SP cannot go beyond end of stack area)
-            raise StackUnderflowError(self.pc)
+            raise StackUnderflowError(self.pc, cpu=self)
         value = self.read16(self.sp) # Read value from stack at SP
         self.sp = (self.sp + 2) & 0xFFFF # Increment SP by 2 (stack grows downwards)
         return value
@@ -628,7 +645,7 @@ class CPU:
                 val = imm_val & 0xFFFF
                 self.write16(addr, val)
             case _: # invalid opcode
-                raise CPUError(f"Invalid opcode: {opcode:02X}",self.pc, instr)
+                raise CPUError(f"Invalid opcode: {opcode:02X}",self.pc, instr, self)
 
     def step(self):
         # each CPU step
