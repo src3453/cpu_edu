@@ -1,4 +1,6 @@
 """ 
+# SRC16 (Scalable RISC 16-bit CPU)
+
 Educational fantasy CPU emulator, minimalistic and designed for learning purposes.
 16-bit, big-endian, 16-bit address space, 16 general-purpose registers (R0-R15) and flag register, and a simple instruction set.
 Register Usage:
