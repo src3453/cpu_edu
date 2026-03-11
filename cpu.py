@@ -53,6 +53,9 @@ CPUID Instruction:
         R2: Extension Level (0 for EL0, 1 for EL1, etc.)
 Instructions and Opcodes:
     The CPU has a concept called "Extension Level" (EL) which allows for future expansion of the instruction set.
+    Extension level represents the set of instructions that the CPU supports, with higher levels including all instructions from lower levels plus additional ones.
+    All Extension levels are backwards compatible, meaning that a CPU with a higher EL can run programs designed for lower ELs, but not vice versa.
+
     EL0 (Base Instructions, minimal set for basic operation):
         Load/Store:
         0x01: MOV dst_reg, src1_reg - Move data from src1_reg to dst_reg
@@ -123,8 +126,13 @@ Instructions and Opcodes:
         0x27: LDB dst_reg, [src1_reg] - Load byte from memory address formed by src1_reg into dst_reg (similar to LD but for 8-bit data instead of 16-bit)
         0x28: STB [dst_reg], src1_reg - Store byte from src1_reg into memory address formed by dst_reg (similar to ST but for 8-bit data instead of 16-bit)
     
-    EL2 (Extended Memory Address, for supporting more than 64KB of memory in the future. Not implemented yet, but reserved for future expansion):
+    EL2 (Hardware Interupt and Extended Memory Address, for supporting more than 64KB of memory in the future. Not implemented yet, but reserved for future expansion):
         BANK, SWITCH, and other instructions for managing multiple memory banks to effectively increase addressable memory space beyond 16 bits.
+        Timer and other hardware interrupt control instructions for more advanced interrupt handling capabilities.
+    
+    EL3 (Paging MMU and Virtual Memory, Privileged Instructions, for implementing virtual memory and more advanced OS features. Not implemented yet, but reserved for future expansion):
+        In EL3, Supervisor mode instructions are introduced for managing virtual memory, page tables, and other MMU features.
+        Page fault, Privilege violation, and other exceptions are introduced for handling various error conditions that can occur in a more complex operating system environment.
 """
 
 import sys
