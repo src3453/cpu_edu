@@ -1,0 +1,37 @@
+{
+  "name": "src16-asm-syntax",
+  "displayName": "SRC16 Assembly Syntax",
+  "description": "Syntax highlighting for SRC16 CPU assembly language",
+  "version": "0.0.1",
+  "publisher": "src3453",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "src16asm",
+        "aliases": [
+          "SRC16 ASM",
+          "src16asm"
+        ],
+        "extensions": [
+          ".a",
+          ".asm"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "src16asm",
+        "scopeName": "source.src16asm",
+        "path": "./syntaxes/src16asm.tmLanguage.json"
+      }
+    ]
+  }
+}

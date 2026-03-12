@@ -190,6 +190,11 @@ class CPUError(Exception):
             else:
                 txt += f"R{i:2}: {self.cpu.reg[i]:04X}\n"
         txt += f"FLAG: {self.cpu.flag:016b}"
+        dump_start = self.pc//256*256 # show 32 bytes before the error instruction
+        print(f"Memory dump (0x{dump_start:04X}):")
+        for i in range(dump_start, dump_start + 256, 16):
+            chunk = self.cpu.mem[i:i+16]
+            print(f"{i:04X}: " + " ".join(f"{b:02X}" for b in chunk) + " " + "".join([chr(b) if 32 <= b <= 126 else '.' for b in chunk]))
         return txt
 
 class InvalidOpcodeError(CPUError):
