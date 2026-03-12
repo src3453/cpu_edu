@@ -4,3 +4,6 @@
 *.pyd
 *.bin
 /work
+.venv
+.vscode
+.env
