@@ -29,6 +29,13 @@ SINGLE_TOKENS = {
     "}": "RBRACE",
 }
 
+TWO_CHAR_TOKENS = {
+    "==": "EQUAL",
+    "!=": "NOT_EQUAL",
+    "<=": "LESS_EQUAL",
+    ">=": "GREATER_EQUAL",
+}
+
 class Token:
     # A simple token class to represent different types of tokens in the C subset language.
     def __init__(self, type, value, pos):
@@ -64,6 +71,26 @@ class Lexer:
         while self.getchar() is not None and self.getchar().isspace():
             self.advance()
 
+    def ignore_comment_inline(self):
+        # Skip over comments in the source code. This lexer only supports single-line comments starting with "//".
+        while self.getchar() is not None and self.getchar() != '\n': # skip characters until we reach the end of the line
+            self.advance()
+        if self.getchar() == '\n': # also skip the newline character at the end of the comment line
+            self.advance()
+
+    def ignore_comment_block(self):
+        # Skip over block comments in the source code. This lexer supports block comments starting with "/*" and ending with "*/".
+        self.advance() # skip '/'
+        self.advance() # skip '*'
+        while True:
+            if self.getchar() is None:
+                raise SyntaxError("Unterminated block comment") # If we reach the end of the source without finding the closing "*/", it's an error.
+            if self.getchar() == '*' and self.getchar(1) == '/':
+                self.advance() # skip '*'
+                self.advance() # skip '/'
+                break
+            self.advance() # continue advancing through the comment until we find the closing "*/"
+
     def read_number(self) -> Token:
         # Read a number token from the source code, handling decimal and hexadecimal formats.
         start_pos = self.pos
@@ -82,10 +109,31 @@ class Lexer:
                 self.advance()
             value = int(self.source[start_pos:self.pos]) # Convert the decimal string to an integer.
         return Token("NUMBER", value, start_pos)
+    
+    def read_identifier(self) -> Token:
+        # Read an identifier token from the source code, which can be a variable name, function name, or keyword.
+        start_pos = self.pos
+        while self.getchar() is not None and (self.getchar().isalnum() or self.getchar() == '_'):
+            self.advance()
+        value = self.source[start_pos:self.pos] # Extract the identifier string from the source.
+        token_type = KEYWORDS.get(value, "IDENT") # Check if the identifier is a reserved keyword; if not, it's a regular identifier.
+        return Token(token_type, value, start_pos)
+    
+    def skip_ignorable(self):
+        # Skip over any whitespace and comments before looking for the next token.
+        while True: # Loop to skip whitespace and comments before looking for the next token.
+            self.skip_whitespace() # Skip any leading whitespace before looking for the next token.
+            if self.getchar() == '/' and self.getchar(1) == '/': # If we encounter "//", it's the start of a single-line comment, so we should ignore it.
+                self.ignore_comment_inline()
+                continue
+            if self.getchar() == '/' and self.getchar(1) == '*': # If we encounter "/*", it's the start of a block comment, so we should ignore it.
+                self.ignore_comment_block()
+                continue
+            break
 
     def next_token(self) -> Token:
         # Get the next token from the source code.
-        self.skip_whitespace() # Skip any leading whitespace before trying to read the next token.
+        self.skip_ignorable() # Skip any whitespace and comments before looking for the next token.
         ch = self.getchar() # Get the current character to determine what type of token we are looking at.
 
         if ch is None:
@@ -93,3 +141,32 @@ class Lexer:
         
         if ch.isdigit():
             return self.read_number() # If the current character is a digit, read a number token.
+        
+        if ch.isalpha() or ch == '_': # Identifiers can start with a letter or underscore
+            return self.read_identifier() # Read an identifier token (variable names, function names, or keywords).
+        
+        # Note: run longer tokens (e.g., "==", "!=", "<=", ">=") before shorter tokens (e.g., "=", "<", ">") to ensure correct tokenization.
+        two_char = ch + (self.getchar(1) or '') # Check for two-character tokens (e.g., "==", "!=", "<=", ">=").
+        if two_char in TWO_CHAR_TOKENS:
+            token_type = TWO_CHAR_TOKENS[two_char] # Get the token type for the two-character token.
+            self.advance() # Move past the first character of the two-character token.
+            self.advance() # Move past the second character of the two-character token.
+            return Token(token_type, two_char, self.pos - 2) # Return the token for the two-character operator.
+        
+        if ch in SINGLE_TOKENS:
+            token_type = SINGLE_TOKENS[ch] # Get the token type for the single-character token.
+            self.advance() # Move past the single-character token.
+            return Token(token_type, ch, self.pos - 1) # Return the token for the single-character operator or punctuation.
+        
+        raise SyntaxError(f"Unexpected character '{ch}' at position {self.pos}") # If the character doesn't match any known token type, raise a syntax error.
+    
+    def tokenize(self) -> list[Token]:
+        # Tokenize the entire source code and return a list of tokens.
+        tokens = []
+        while True:
+            token = self.next_token() # Get the next token from the source code.
+            tokens.append(token) # Add the token to the list of tokens.
+            if token.type == "EOF":
+                break # If we've reached the end of the file, stop tokenizing.
+        return tokens
+            

@@ -6,13 +6,7 @@ from lexer import Lexer, Token
 def util_tokenize(source_code: str) -> list[Token]:
     # test util for tokenizing source code into a list of tokens using the Lexer class.
     lexer = Lexer(source_code)
-    tokens = []
-    while True:
-        token = lexer.next_token()
-        tokens.append(token)
-        if token.type == "EOF":
-            break
-    return tokens
+    return lexer.tokenize() # returns a list of tokens, including an EOF token at the end
 
 def test_number_decimal():
     source_code = "12345" # A simple test case with a single decimal number
@@ -53,11 +47,11 @@ def test_number_invalid_hexadecimal_no_digits():
 def test_identifiers():
     source_code = "var1 _var2 var_3" # A test case with multiple identifiers
     tokens = util_tokenize(source_code)
-    assert tokens[0].type == "IDENTIFIER"
+    assert tokens[0].type == "IDENT"
     assert tokens[0].value == "var1"
-    assert tokens[1].type == "IDENTIFIER"
+    assert tokens[1].type == "IDENT"
     assert tokens[1].value == "_var2"
-    assert tokens[2].type == "IDENTIFIER"
+    assert tokens[2].type == "IDENT"
     assert tokens[2].value == "var_3"
     assert tokens[3].type == "EOF"
     assert tokens[3].value is None
@@ -121,3 +115,63 @@ def test_single_tokens():
         "LPAREN","RPAREN",
         "LBRACE","RBRACE"
     ] 
+
+def test_invalid_character():
+    source_code = "@" # An invalid character that is not recognized by the lexer
+    lexer = Lexer(source_code)
+    with pytest.raises(SyntaxError):
+        lexer.next_token() # will raise a SyntaxError because '@' is not a valid token in our C subset language
+
+def test_empty_source():
+    source_code = "" # An empty source code should produce only an EOF token
+    tokens = util_tokenize(source_code)
+    assert len(tokens) == 1
+    assert tokens[0].type == "EOF"
+    assert tokens[0].value is None
+
+def test_number_with_identifier():
+    source_code = "var123 456abc" # A test case with an identifier followed by a number
+    tokens = util_tokenize(source_code)
+    assert tokens[0].type == "IDENT"
+    assert tokens[0].value == "var123"
+    assert tokens[1].type == "NUMBER"
+    assert tokens[1].value == 456
+    assert tokens[2].type == "IDENT"
+    assert tokens[2].value == "abc"
+    assert tokens[3].type == "EOF"
+    assert tokens[3].value is None
+
+def test_large_integer():
+    # 16bit unsigned integer max value is 65535 (0xFFFF), so this test checks if the lexer can handle large integers correctly.
+    tokens = util_tokenize("65535")
+    assert tokens[0].value == 65535
+
+def test_two_char_tokens():
+    # This test checks if the lexer can correctly recognize two-character tokens like "==", "!=", "<=", and ">=" in the source code.
+    tokens = util_tokenize("a == b != c <= d >= e")
+
+    assert [t.type for t in tokens if t.type != "EOF"] == [
+        "IDENT","EQUAL","IDENT",
+        "NOT_EQUAL","IDENT",
+        "LESS_EQUAL","IDENT",
+        "GREATER_EQUAL","IDENT"
+    ]
+
+def test_inline_comment():
+    # This test checks if the lexer correctly ignores inline comments (comments that start with "//" and continue until the end of the line) in the source code.
+    tokens = util_tokenize("1 // comment\n 2")
+
+    assert tokens[0].value == 1
+    assert tokens[1].value == 2
+
+def test_block_comment():
+    # This test checks if the lexer correctly ignores block comments (comments that start with "/*" and end with "*/") in the source code.
+    tokens = util_tokenize("1 /* comment */ 2")
+
+    assert tokens[0].value == 1
+    assert tokens[1].value == 2
+
+def test_unterminated_block_comment():
+    # This test checks if the lexer correctly raises a SyntaxError when it encounters an unterminated block comment (a comment that starts with "/*" but does not have a matching "*/").
+    with pytest.raises(SyntaxError):
+        util_tokenize("/* comment")
