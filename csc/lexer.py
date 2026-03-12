@@ -29,6 +29,7 @@ SINGLE_TOKENS = {
     "}": "RBRACE",
 }
 
+# Two-character tokens
 TWO_CHAR_TOKENS = {
     "==": "EQUAL",
     "!=": "NOT_EQUAL",
@@ -72,14 +73,14 @@ class Lexer:
             self.advance()
 
     def ignore_comment_inline(self):
-        # Skip over comments in the source code. This lexer only supports single-line comments starting with "//".
+        # Skip over comments in the source code.
         while self.getchar() is not None and self.getchar() != '\n': # skip characters until we reach the end of the line
             self.advance()
         if self.getchar() == '\n': # also skip the newline character at the end of the comment line
             self.advance()
 
     def ignore_comment_block(self):
-        # Skip over block comments in the source code. This lexer supports block comments starting with "/*" and ending with "*/".
+        # Skip over block comments in the source code. 
         self.advance() # skip '/'
         self.advance() # skip '*'
         while True:
