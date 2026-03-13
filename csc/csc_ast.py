@@ -6,7 +6,7 @@
 # Nodes in the AST
 class Number:
     def __init__(self, value):
-        self.value = value
+        self.value = int(value) # Ensure that the value is stored as an integer (lexer may return it as a string)
 
 class Identifier:
     def __init__(self, name):
@@ -33,3 +33,16 @@ class Block:
     # node graph for a block of statements enclosed in braces
     def __init__(self, statements):
         self.statements = statements # statements in the block represented as a list of AST nodes
+
+class If:
+    # node graph for if statements
+    def __init__(self, condition, then_branch, else_branch=None):
+        self.condition = condition # condition expression for the if statement
+        self.then_branch = then_branch # AST node representing the 'then' branch of the if statement
+        self.else_branch = else_branch # AST node representing the 'else' branch of the if statement (optional)
+
+class While:
+    # node graph for while loops
+    def __init__(self, condition, body):
+        self.condition = condition # condition expression for the while loop
+        self.body = body # AST node representing the body of the while loop
