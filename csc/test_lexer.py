@@ -1,6 +1,6 @@
 # requires pytest to run the tests. You can install it with `pip install pytest`.
 
-import pytest  # ty:ignore[unresolved-import]
+import pytest
 from lexer import Lexer, Token
 
 def util_tokenize(source_code: str) -> list[Token]:
