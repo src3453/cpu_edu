@@ -1,5 +1,5 @@
 from csc_ast import Return
-import pytest
+import pytest # ty:ignore[unresolved-import]
 from parser import Parser
 from token_utils import TokenStream
 from lexer import Lexer

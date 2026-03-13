@@ -67,6 +67,6 @@ class Parser:
     def parse_statement(self):
         # Parse a statement.
         if self.tokens.check("RETURN"):
-            return self.parse_return()
+            return self.parse_return_statement()
 
         raise SyntaxError("Unknown statement") # For now, we only support return statements, so if we see anything else, it's an error.

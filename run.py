@@ -22,7 +22,7 @@ if __name__ == "__main__":
         else:
             print(f"R{i:2}: {cpu.reg[i]:04X}")
     print(f"FLAG: {cpu.flag:016b}")
-    print(f"Memory dump (first 256 bytes):")
+    print("Memory dump (first 256 bytes):")
     for i in range(0, 256, 16):
         chunk = cpu.mem[i:i+16]
         print(f"{i:04X}: " + " ".join(f"{b:02X}" for b in chunk) + " " + "".join([chr(b) if 32 <= b <= 126 else '.' for b in chunk]))

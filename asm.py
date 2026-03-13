@@ -121,7 +121,7 @@ class Assembler:
             return self.symbols[x]
         try:
             return parse_number(x)
-        except:
+        except ValueError:
             raise Exception(f"line {lineno}: undefined symbol {x}")
 
     def encode_R(self,op,d,s1=0,s2=0):

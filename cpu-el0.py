@@ -194,28 +194,28 @@ class CPUError(Exception):
 
 class InvalidOpcodeError(CPUError):
     # Exception for invalid opcode errors
-    def __init__(self, opcode, pc, instr):
-        super().__init__(f"Invalid opcode: {opcode:02X}", pc, instr)
+    def __init__(self, opcode, pc, instr, cpu):
+        super().__init__(f"Invalid opcode: {opcode:02X}", pc, instr, cpu)
         self.opcode = opcode
 
 class StackOverflowError(CPUError):
     # Exception for stack overflow errors
-    def __init__(self, pc):
-        super().__init__("Stack overflow", pc)
+    def __init__(self, pc, cpu):
+        super().__init__("Stack overflow", pc, cpu=cpu)
 
 class StackUnderflowError(CPUError):
     # Exception for stack underflow errors
-    def __init__(self, pc):
-        super().__init__("Stack underflow", pc)
+    def __init__(self, pc, cpu):
+        super().__init__("Stack underflow", pc, cpu=cpu)
 
 class MemoryAccessError(CPUError):
     # Exception for invalid memory access errors
-    def __init__(self, address, pc):
-        super().__init__(f"Invalid memory access at address: {address:04X}", pc)
+    def __init__(self, address, pc, cpu):
+        super().__init__(f"Invalid memory access at address: {address:04X}", pc, cpu=cpu)
         self.address = address
 
 # test
-#raise InvalidOpcodeError(0xAB, 0x1234, 0xAB000000)
+#raise InvalidOpcodeError(0xAB, 0x1234, 0xAB000000, None)
 
 class CPU:
     # Main CPU class
