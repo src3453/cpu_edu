@@ -1,0 +1,4 @@
+[tool.ty.rules]
+# we don't need to check types in this project, so it is set to "warn" to avoid errors about missing type annotations and unresolved attributes.
+invalid-assignment = "warn"
+unresolved-attribute = "warn"

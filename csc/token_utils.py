@@ -25,6 +25,11 @@ class TokenStream:
         if token is not None and token.type == token_type:
             return self.consume()
         return None
+
+    def check(self, token_type):
+        # Check if the current token matches the expected type without consuming it. Return True if it matches, False otherwise.
+        token = self.peek()
+        return token is not None and token.type == token_type
     
     def expect(self, token_type):
         # Expect the current token to be of a specific type, consume it, and return it. 

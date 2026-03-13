@@ -64,9 +64,14 @@ class Parser:
         self.tokens.expect("SEMICOLON") # Expect and consume the ';' token
         return ast.Return(expr) # Create and return a Return AST node with the parsed expression as its value
 
+    def parse_expression_statement(self):
+        # Parse an expression statement, which is an expression followed by a semicolon.
+        expr = self.parse_expression() # Parse the expression
+        self.tokens.expect("SEMICOLON") # Expect and consume the ';' token
+        return ast.ExpressionStatement(expr) # Create and return an ExpressionStatement AST node with the parsed expression
+
     def parse_statement(self):
-        # Parse a statement.
+        # Parse a statement, which can currently only be a return statement or an expression statement.
         if self.tokens.check("RETURN"):
             return self.parse_return_statement()
-
-        raise SyntaxError("Unknown statement") # For now, we only support return statements, so if we see anything else, it's an error.
+        return self.parse_expression_statement()
