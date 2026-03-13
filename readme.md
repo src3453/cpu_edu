@@ -1,6 +1,8 @@
 # SRC16 (Scalable RISC 16-bit CPU)
 
-Educational fantasy CPU emulator, minimalistic and designed for learning purposes.
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/src3453/cpu_edu)
+
+```Educational fantasy CPU emulator, minimalistic and designed for learning purposes.
 16-bit, big-endian, 16-bit address space, 16 general-purpose registers (R0-R15) and flag register, and a simple instruction set.
 Register Usage:
     R14 is the stack pointer (SP), and R15 is the program counter (PC), R0 is the zero register (always reads as 0, writes are ignored).
@@ -157,3 +159,4 @@ Instructions and Opcodes:
     EL3 (Paging MMU and Virtual Memory, Privileged Instructions, for implementing virtual memory and more advanced OS features. Not implemented yet, but reserved for future expansion):
         In EL3, Supervisor mode instructions are introduced for managing virtual memory, page tables, and other MMU features.
         Page fault, Privilege violation, and other exceptions are introduced for handling various error conditions that can occur in a more complex operating system environment.
+```
