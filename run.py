@@ -1,11 +1,11 @@
 from cpu import CPU
 import sys
 
-def load_program(cpu: CPU, filename: str) -> None:
+def load_program(cpu: CPU, filename: str, offset:int=0) -> None:
     with open(filename, "rb") as f:
         data = f.read()
         # cpu.mem is bytearray
-        cpu.mem[:len(data)] = data    
+        cpu.mem[offset:len(data)+offset] = data    
 
 if __name__ == "__main__":
     cpu = CPU() # Create a CPU instance
