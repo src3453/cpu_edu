@@ -10,7 +10,10 @@ def load_program(cpu: CPU, filename: str) -> None:
 if __name__ == "__main__":
     cpu = CPU() # Create a CPU instance
     load_program(cpu, sys.argv[1]) # Load the assembled binary program into memory
-    cpu.run() # Run the CPU until it halts
+    try:
+        cpu.run() # Run the CPU until it halts
+    except KeyboardInterrupt:
+        exit(0)
     print("\nCPU halted. Final register state:")
     for i in range(16):
         if i == 14:
