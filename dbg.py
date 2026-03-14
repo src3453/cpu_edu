@@ -73,8 +73,20 @@ def evaluate(input:str):
             else:
                 notify_error("invalid operands")
         case "x":
-            print("Exiting, bye!")
+            print("\nExiting, bye!")
             exit(0)
+        case "h":
+            print("""
+        debugger help:
+s: State - print register state.
+r[addr_start].[addr_end]: Read - show memory hexdump of specified memory area.
+w[addr].[value]: Write - write specific 8bit data to address.
+e[addr]: Execute - start execution from specified address.
+l[path].[addr]: Load specified binary file into start address.
+x: eXit - exit REPL.
+h: Help - show this help. (also "help" will work)
+""")
+
         case _:
             notify_error("unknown command")
 
@@ -86,7 +98,7 @@ if __name__ == "__main__":
     print("(c) 2026 src3453 MIT License.")
     while True:
         try:
-            evaluate(input=input("dbg> "))
+            evaluate(input=input("> "))
         except KeyboardInterrupt:
             print("\nExiting, bye!")
             exit(0)
