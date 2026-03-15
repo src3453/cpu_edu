@@ -2,7 +2,6 @@
 # like old 6502 debugger, it shows register state, read memory, write memory and execute memory.
 
 from cpu import CPU
-import sys
 from run import load_program
 
 # command format:
