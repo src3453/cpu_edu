@@ -8,3 +8,5 @@
 .vscode
 .env
 .pytest_cache
+**/target
+Cargo.lock
