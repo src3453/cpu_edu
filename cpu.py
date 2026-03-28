@@ -267,6 +267,7 @@ class CPU:
         self.reg = [0] * 16 # Clear all registers
         self.flag = 0 # clear flags
         self.running = True # reset running state to True
+        self.cycle = 0 # reset cycle count
         self.pc = 0x0000 # Start execution from address 0 
         self.sp = self.STACK_END # Initialize stack pointer to top of stack area
 
@@ -697,6 +698,7 @@ class CPU:
         opcode, dest_reg, src1_reg, src2_reg, imm_val = self.decode(instr) # Decode instruction
         self.execute(opcode, dest_reg, src1_reg, src2_reg, imm_val, instr) # Execute instruction
         self.reg[0] = 0 # R0 is always zero
+        self.cycle += 1 # Increment cycle count
     
     def run(self):
         # actually run CPU while running

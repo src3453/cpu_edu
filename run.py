@@ -1,5 +1,6 @@
 from cpu import CPU
 import sys
+import time
 
 def load_program(cpu: CPU, filename: str, offset:int=0) -> None:
     with open(filename, "rb") as f:
@@ -11,7 +12,12 @@ if __name__ == "__main__":
     cpu = CPU() # Create a CPU instance
     load_program(cpu, sys.argv[1]) # Load the assembled binary program into memory
     try:
+        start_time = time.perf_counter()
         cpu.run() # Run the CPU until it halts
+        end_time = time.perf_counter()
+        cycles = cpu.cycle
+        print(f"Program executed in {end_time - start_time:.6f} seconds.")
+        print(f"Total cycles: {cycles} ({cycles / (end_time - start_time) / 1000:.2f} KIPS)")
     except KeyboardInterrupt:
         exit(0)
     print("\nCPU halted. Final register state:")

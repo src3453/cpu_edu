@@ -180,6 +180,7 @@ struct CPU {
     flags: u16,          // Flag register
     mem: [u8; 65536], // 16-bit address space (64KB)
     running: bool,     // CPU running state
+    cycles: u64,        // Cycle count for performance measurement
 }
 
 impl CPU {
@@ -189,6 +190,7 @@ impl CPU {
             flags: 0,
             mem: [0; 65536],
             running: false,
+            cycles: 0,
         };
         cpu.reset(); // Initialize CPU state
         cpu // return the initialized CPU instance
@@ -533,6 +535,7 @@ impl CPU {
         let (opcode, dest_reg, src1_reg, src2_reg, imm_val) = self.decode(instruction); // decode the instruction
         self.execute(opcode, dest_reg, src1_reg, src2_reg, imm_val); // execute the instruction
         self.reg[0] = 0; // ensure R0 always reads as 0
+        self.cycles += 1; // increment cycle count (you can adjust this to account for different instruction timings if desired)
     }
 
     fn run(&mut self) {
@@ -549,14 +552,23 @@ fn load_program(cpu: &mut CPU, program: &[u8], start_addr: u16) {
 }
 
 use std::env;
+use std::time::{Instant, Duration};
 fn main () {
     let mut cpu = CPU::new();
     println!("Hello, SRC16 CPU Emulator in Rust!\n");
     let file_path = env::args().nth(1).unwrap_or_else(|| "../work/prog.a.bin".into());
     let program = std::fs::read(file_path).expect("Failed to read program file");
     load_program(&mut cpu, &program, 0); // Load the program into memory    
+    let start_time = Instant::now();
     cpu.run();
-    println!("CPU halted. Final register state:");
+    let elapsed_time = start_time.elapsed();
+    let kips = if elapsed_time.as_nanos() > 0 { // Calculate KIPS (Kilo Instructions Per Second) based on cycle count and elapsed time
+        (cpu.cycles * 1000000) as f64 / elapsed_time.as_nanos() as f64
+    } else {
+        0.0
+    };
+    println!("Execution completed in {} cycles and {:.2?} ({} KIPS)", cpu.cycles, elapsed_time, kips);
+    println!("CPU halted at cycle {}. Final register state:", cpu.cycles);
     for i in 0..16 {
         print!("R{}: 0x{:04X} ", i, cpu.reg[i]);
         if (i + 1) % 4 == 0 {
